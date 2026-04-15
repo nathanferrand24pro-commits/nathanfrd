@@ -13,6 +13,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@extractus/article-extractor": "^8.0.20",
     "@libsql/client": "^0.17.2",
     "@prisma/adapter-libsql": "^7.7.0",
     "@prisma/client": "^7.7.0",

@@ -15,6 +15,7 @@ model Source {
   scraper       String    // identifiant du scraper
   active        Boolean   @default(true)
   lastScrapedAt DateTime?
+  lastError     String?
   createdAt     DateTime  @default(now())
   articles      Article[]
 }

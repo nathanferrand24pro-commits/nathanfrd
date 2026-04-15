@@ -34,6 +34,7 @@ export interface ScrapeResult {
   sourceId: string;
   sourceName: string;
   newArticles: number;
+  found: number;
   error?: string;
 }
 
@@ -44,20 +45,18 @@ export async function runAllScrapers(): Promise<ScrapeResult[]> {
   for (const source of sources) {
     const scraperFn = SCRAPERS[source.scraper];
     if (!scraperFn) {
-      console.warn(`[Scraper] Pas de scraper trouvé pour: ${source.scraper}`);
+      console.warn(`[Scraper] Pas de scraper pour: ${source.scraper}`);
       continue;
     }
 
     try {
-      console.log(`[Scraper] Démarrage: ${source.name}`);
+      console.log(`[Scraper] ▶ ${source.name}`);
       const articles = await scraperFn();
       let newCount = 0;
 
       for (const article of articles) {
         try {
-          const existing = await prisma.article.findFirst({
-            where: { url: article.url },
-          });
+          const existing = await prisma.article.findFirst({ where: { url: article.url } });
           if (!existing) {
             await prisma.article.create({
               data: {
@@ -72,32 +71,40 @@ export async function runAllScrapers(): Promise<ScrapeResult[]> {
             newCount++;
           }
         } catch (e) {
-          // Skip duplicate articles
           const err = e as Error;
           if (!err.message?.includes("Unique constraint")) {
-            console.error(`[Scraper] Erreur article ${article.url}:`, err.message);
+            console.error(`[Scraper] Article KO ${article.url}:`, err.message);
           }
         }
       }
 
+      // Sauvegarder le résultat (succès ou 0 trouvé)
+      const errorMsg = articles.length === 0
+        ? "Aucun article trouvé — site peut-être bloqué ou sélecteur incorrect"
+        : null;
+
       await prisma.source.update({
         where: { id: source.id },
-        data: { lastScrapedAt: new Date() },
+        data: {
+          lastScrapedAt: new Date(),
+          lastError: errorMsg,
+        },
       });
 
-      console.log(
-        `[Scraper] ${source.name}: ${newCount} nouveaux articles (${articles.length} trouvés)`
-      );
-      results.push({ sourceId: source.id, sourceName: source.name, newArticles: newCount });
+      console.log(`[Scraper] ✓ ${source.name}: +${newCount} nouveaux (${articles.length} trouvés)`);
+      results.push({ sourceId: source.id, sourceName: source.name, newArticles: newCount, found: articles.length });
+
     } catch (error) {
       const err = error as Error;
-      console.error(`[Scraper] Erreur pour ${source.name}:`, err.message);
-      results.push({
-        sourceId: source.id,
-        sourceName: source.name,
-        newArticles: 0,
-        error: err.message,
-      });
+      const errorMsg = err.message ?? "Erreur inconnue";
+      console.error(`[Scraper] ✗ ${source.name}:`, errorMsg);
+
+      await prisma.source.update({
+        where: { id: source.id },
+        data: { lastError: errorMsg },
+      }).catch(() => {});
+
+      results.push({ sourceId: source.id, sourceName: source.name, newArticles: 0, found: 0, error: errorMsg });
     }
   }
 

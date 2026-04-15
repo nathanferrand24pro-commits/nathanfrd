@@ -3,6 +3,7 @@ import { prisma } from "../lib/db";
 import { ArticleCard, ArticleData } from "../components/ArticleCard";
 import { FilterBar } from "../components/FilterBar";
 import { ScrapeButton } from "../components/ScrapeButton";
+import { ImportButton } from "../components/ImportButton";
 import Link from "next/link";
 
 interface PageProps {
@@ -243,6 +244,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             />
           </div>
         </form>
+        <ImportButton />
         <ScrapeButton />
       </div>
 
