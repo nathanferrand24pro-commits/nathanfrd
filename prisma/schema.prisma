@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Source {
+  id            String    @id @default(cuid())
+  name          String
+  url           String
+  type          String    // "officiel" | "cabinet"
+  scraper       String    // identifiant du scraper
+  active        Boolean   @default(true)
+  lastScrapedAt DateTime?
+  createdAt     DateTime  @default(now())
+  articles      Article[]
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String?
+  url         String   @unique
+  publishedAt DateTime
+  categories  String   @default("[]") // JSON array stringifié
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model AlertSubscription {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  keywords  String   @default("[]") // JSON array stringifié
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
