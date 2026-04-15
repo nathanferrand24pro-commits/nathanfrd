@@ -4,34 +4,43 @@ import { useState } from "react";
 
 export function ScrapeButton() {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   const handleScrape = async () => {
     setLoading(true);
-    setMessage("");
+    setStatus("idle");
     try {
       const res = await fetch("/api/scrape", { method: "POST" });
       if (res.ok) {
-        setMessage("Actualisation lancée — les nouvelles décisions apparaîtront dans quelques instants.");
-        setTimeout(() => setMessage(""), 6000);
-        // Reload page after a delay to show new articles
-        setTimeout(() => window.location.reload(), 8000);
+        setStatus("success");
+        setTimeout(() => {
+          setStatus("idle");
+          window.location.reload();
+        }, 5000);
       } else {
-        setMessage("Erreur lors du lancement de l'actualisation.");
+        setStatus("error");
+        setTimeout(() => setStatus("idle"), 4000);
       }
     } catch {
-      setMessage("Erreur réseau.");
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 4000);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="flex flex-col items-end gap-2">
       <button
         onClick={handleScrape}
         disabled={loading}
-        className="flex items-center gap-2 bg-blue-800 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl"
+        style={{
+          background: loading ? "#aeaeb2" : "#0071e3",
+          color: "#fff",
+          cursor: loading ? "not-allowed" : "pointer",
+          boxShadow: loading ? "none" : "0 1px 3px rgba(0,113,227,0.3)",
+        }}
       >
         {loading ? (
           <>
@@ -46,14 +55,17 @@ export function ScrapeButton() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Actualiser maintenant
+            Actualiser
           </>
         )}
       </button>
-      {message && (
-        <p className="mt-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded">
-          {message}
-        </p>
+      {status === "success" && (
+        <span className="text-xs font-medium" style={{ color: "#34c759" }}>
+          ✓ Lancé — rechargement dans 5s
+        </span>
+      )}
+      {status === "error" && (
+        <span className="text-xs" style={{ color: "#ff3b30" }}>Erreur</span>
       )}
     </div>
   );

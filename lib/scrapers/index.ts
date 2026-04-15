@@ -9,6 +9,9 @@ import { scrapeFromontBriens } from "./fromont-briens";
 import { scrapeCapstan } from "./capstan";
 import { scrapeCmsLefebvre } from "./cms-lefebvre";
 import { scrapeBarthelemy } from "./barthelemy";
+import { scrapeEurLex } from "./eur-lex";
+import { scrapeHudoc } from "./hudoc";
+import { scrapeJuricaf } from "./juricaf";
 
 type ScraperFn = () => Promise<ScrapedArticle[]>;
 
@@ -22,6 +25,9 @@ const SCRAPERS: Record<string, ScraperFn> = {
   capstan: scrapeCapstan,
   "cms-lefebvre": scrapeCmsLefebvre,
   barthelemy: scrapeBarthelemy,
+  "eur-lex": scrapeEurLex,
+  hudoc: scrapeHudoc,
+  juricaf: scrapeJuricaf,
 };
 
 export interface ScrapeResult {

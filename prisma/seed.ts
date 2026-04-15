@@ -63,6 +63,25 @@ const sources = [
     type: "cabinet",
     scraper: "barthelemy",
   },
+  // Bases de données juridiques européennes
+  {
+    name: "EUR-Lex (UE)",
+    url: "https://eur-lex.europa.eu",
+    type: "europeen",
+    scraper: "eur-lex",
+  },
+  {
+    name: "HUDOC — CEDH",
+    url: "https://hudoc.echr.coe.int",
+    type: "europeen",
+    scraper: "hudoc",
+  },
+  {
+    name: "Juricaf",
+    url: "https://juricaf.org",
+    type: "officiel",
+    scraper: "juricaf",
+  },
 ];
 
 async function main() {

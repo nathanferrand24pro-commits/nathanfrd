@@ -33,166 +33,176 @@ export function FilterBar({ sources }: FilterBarProps) {
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
+      if (value) params.set(key, value);
+      else params.delete(key);
       params.delete("page");
       router.push(`/?${params.toString()}`);
     },
     [router, searchParams]
   );
 
-  const reset = () => {
-    router.push("/");
-  };
+  const reset = () => router.push("/");
 
   const currentType = searchParams.get("type") ?? "";
   const currentSource = searchParams.get("source") ?? "";
   const currentCategory = searchParams.get("category") ?? "";
   const currentFrom = searchParams.get("from") ?? "";
   const currentTo = searchParams.get("to") ?? "";
-
   const hasFilters = currentType || currentSource || currentCategory || currentFrom || currentTo;
 
-  const officialSources = sources.filter((s) => s.type === "officiel");
+  const officialSources = sources.filter((s) => s.type === "officiel" || s.type === "europeen");
   const cabinetSources = sources.filter((s) => s.type === "cabinet");
 
   return (
-    <aside className="w-64 shrink-0 space-y-6">
-      {/* Type de source */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Type de source
-        </h3>
-        <div className="space-y-2">
-          {[
-            { value: "", label: "Toutes les sources" },
-            { value: "officiel", label: "Sources officielles" },
-            { value: "cabinet", label: "Cabinets d'avocats" },
-          ].map((opt) => (
-            <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="type"
-                value={opt.value}
-                checked={currentType === opt.value}
-                onChange={() => updateParam("type", opt.value)}
-                className="text-blue-800"
-              />
-              <span className="text-sm text-gray-700">{opt.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+    <aside className="w-56 shrink-0 space-y-6">
 
-      {/* Sources individuelles */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Sources
-        </h3>
-        <div className="space-y-1">
-          <p className="text-xs text-gray-400 font-medium mb-1">Officielles</p>
-          {officialSources.map((s) => (
-            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="source"
-                value={s.id}
-                checked={currentSource === s.id}
-                onChange={() => updateParam("source", s.id)}
-                className="text-blue-800"
-              />
-              <span className="text-xs text-gray-600">{s.name}</span>
-            </label>
-          ))}
-          <p className="text-xs text-gray-400 font-medium mt-3 mb-1">Cabinets</p>
-          {cabinetSources.map((s) => (
-            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="source"
-                value={s.id}
-                checked={currentSource === s.id}
-                onChange={() => updateParam("source", s.id)}
-                className="text-blue-800"
-              />
-              <span className="text-xs text-gray-600">{s.name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* Type de source */}
+      <FilterSection title="Type">
+        {[
+          { value: "", label: "Tout" },
+          { value: "officiel", label: "Officielles" },
+          { value: "europeen", label: "Européennes" },
+          { value: "cabinet", label: "Cabinets" },
+        ].map((opt) => (
+          <FilterRadio
+            key={opt.value}
+            name="type"
+            value={opt.value}
+            label={opt.label}
+            checked={currentType === opt.value}
+            onChange={() => updateParam("type", opt.value)}
+          />
+        ))}
+      </FilterSection>
+
+      {/* Sources */}
+      <FilterSection title="Sources">
+        {officialSources.length > 0 && (
+          <p className="text-xs font-medium mb-1" style={{ color: "#aeaeb2" }}>Officielles & UE</p>
+        )}
+        {officialSources.map((s) => (
+          <FilterRadio
+            key={s.id}
+            name="source"
+            value={s.id}
+            label={s.name}
+            checked={currentSource === s.id}
+            onChange={() => updateParam("source", s.id)}
+          />
+        ))}
+        {cabinetSources.length > 0 && (
+          <p className="text-xs font-medium mt-3 mb-1" style={{ color: "#aeaeb2" }}>Cabinets</p>
+        )}
+        {cabinetSources.map((s) => (
+          <FilterRadio
+            key={s.id}
+            name="source"
+            value={s.id}
+            label={s.name}
+            checked={currentSource === s.id}
+            onChange={() => updateParam("source", s.id)}
+          />
+        ))}
+      </FilterSection>
 
       {/* Thèmes */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Thème
-        </h3>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="category"
-              value=""
-              checked={currentCategory === ""}
-              onChange={() => updateParam("category", "")}
-              className="text-blue-800"
-            />
-            <span className="text-sm text-gray-700">Tous les thèmes</span>
-          </label>
-          {CATEGORIES.map((cat) => (
-            <label key={cat.value} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="category"
-                value={cat.value}
-                checked={currentCategory === cat.value}
-                onChange={() => updateParam("category", cat.value)}
-                className="text-blue-800"
-              />
-              <span className="text-sm text-gray-700">{cat.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <FilterSection title="Thème">
+        <FilterRadio
+          name="category"
+          value=""
+          label="Tous"
+          checked={currentCategory === ""}
+          onChange={() => updateParam("category", "")}
+        />
+        {CATEGORIES.map((cat) => (
+          <FilterRadio
+            key={cat.value}
+            name="category"
+            value={cat.value}
+            label={cat.label}
+            checked={currentCategory === cat.value}
+            onChange={() => updateParam("category", cat.value)}
+          />
+        ))}
+      </FilterSection>
 
-      {/* Dates */}
-      <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Période
-        </h3>
+      {/* Période */}
+      <FilterSection title="Période">
         <div className="space-y-2">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Du</label>
+            <label className="text-xs block mb-1" style={{ color: "#aeaeb2" }}>Du</label>
             <input
               type="date"
               value={currentFrom}
               onChange={(e) => updateParam("from", e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-800"
+              className="w-full text-xs rounded-lg px-2.5 py-1.5 outline-none"
+              style={{ border: "1px solid #e5e5ea", background: "#fff", color: "#1d1d1f" }}
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Au</label>
+            <label className="text-xs block mb-1" style={{ color: "#aeaeb2" }}>Au</label>
             <input
               type="date"
               value={currentTo}
               onChange={(e) => updateParam("to", e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-800"
+              className="w-full text-xs rounded-lg px-2.5 py-1.5 outline-none"
+              style={{ border: "1px solid #e5e5ea", background: "#fff", color: "#1d1d1f" }}
             />
           </div>
         </div>
-      </div>
+      </FilterSection>
 
       {/* Reset */}
       {hasFilters && (
         <button
           onClick={reset}
-          className="w-full text-sm text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded-lg px-3 py-2 transition-colors"
+          className="w-full text-sm rounded-xl px-3 py-2"
+          style={{ color: "#ff3b30", background: "rgba(255,59,48,0.06)", border: "none" }}
         >
-          Réinitialiser les filtres
+          Réinitialiser
         </button>
       )}
     </aside>
+  );
+}
+
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#aeaeb2", letterSpacing: "0.06em" }}>
+        {title}
+      </h3>
+      <div className="space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function FilterRadio({
+  name, value, label, checked, onChange,
+}: {
+  name: string;
+  value: string;
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <div
+        className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+        style={{
+          borderColor: checked ? "#0071e3" : "#c7c7cc",
+          background: checked ? "#0071e3" : "transparent",
+        }}
+      >
+        {checked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+      </div>
+      <span
+        className="text-sm"
+        style={{ color: checked ? "#0071e3" : "#1d1d1f", fontWeight: checked ? 500 : 400 }}
+      >
+        {label}
+      </span>
+    </label>
   );
 }
