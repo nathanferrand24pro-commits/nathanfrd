@@ -46,17 +46,16 @@ export function NewWorkoutButton({
       <button
         onClick={start}
         disabled={loading}
-        className="px-4 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50"
-        style={
+        className={
           primary
-            ? { background: "#bf4800", color: "#ffffff" }
-            : { background: "rgba(191,72,0,0.08)", color: "#bf4800" }
+            ? "btn-accent px-5 py-2.5 text-sm font-medium min-h-[44px] disabled:opacity-50"
+            : "btn-glass px-4 py-2.5 text-sm font-medium min-h-[44px] disabled:opacity-50"
         }
       >
         {loading ? "Création…" : label}
       </button>
       {error && (
-        <p className="text-xs mt-2" style={{ color: "#d70015" }}>
+        <p className="text-xs mt-2" style={{ color: "var(--fit-danger)" }}>
           {error}
         </p>
       )}

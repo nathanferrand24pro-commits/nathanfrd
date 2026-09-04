@@ -18,20 +18,14 @@ export default async function WorkoutHistoryPage() {
     include: { sets: true },
   });
 
-  const card: React.CSSProperties = {
-    background: "#ffffff",
-    border: "1px solid rgba(0,0,0,0.06)",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-  };
-
   return (
     <div className="space-y-6">
       {/* Démarrer une séance d'un autre type */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-1" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-1" style={{ color: "var(--fit-ink)" }}>
           Nouvelle séance
         </h2>
-        <p className="text-xs mb-4" style={{ color: "#6e6e73" }}>
+        <p className="text-xs mb-4" style={{ color: "var(--fit-ink-2)" }}>
           Le tableau de bord propose la séance du jour ; démarrez ici n&apos;importe quel type de
           séance du protocole.
         </p>
@@ -47,34 +41,37 @@ export default async function WorkoutHistoryPage() {
       </div>
 
       {/* Historique */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-4" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-4" style={{ color: "var(--fit-ink)" }}>
           Historique ({workouts.length})
         </h2>
         {workouts.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6e6e73" }}>
+          <p className="text-sm" style={{ color: "var(--fit-ink-2)" }}>
             Aucune séance enregistrée.
           </p>
         ) : (
-          <ul className="divide-y" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+          <ul className="space-y-2">
             {workouts.map((w) => {
               const volume = w.sets.reduce((sum, s) => sum + s.reps * s.weightKg, 0);
               return (
                 <li key={w.id}>
                   <Link
                     href={`/fitness/seance/${w.id}`}
-                    className="flex items-center justify-between py-3"
+                    className="glass-inset flex items-center justify-between gap-3 px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium" style={{ color: "#1d1d1f" }}>
+                      <p className="text-sm font-medium" style={{ color: "var(--fit-ink)" }}>
                         {DAY_TYPE_LABELS[w.dayType as DayType] ?? w.dayType}
                         {w.phase && (
-                          <span className="ml-2 text-xs" style={{ color: "#bf4800" }}>
+                          <span
+                            className="ml-2 text-xs"
+                            style={{ color: "var(--fit-accent-strong)" }}
+                          >
                             {PHASE_INFO[w.phase as Phase]?.label}
                           </span>
                         )}
                       </p>
-                      <p className="text-xs mt-0.5" style={{ color: "#6e6e73" }}>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--fit-ink-2)" }}>
                         {new Date(w.date).toLocaleDateString("fr-FR", {
                           weekday: "long",
                           day: "numeric",
@@ -87,7 +84,7 @@ export default async function WorkoutHistoryPage() {
                         {w.durationMin ? ` · ${w.durationMin} min` : ""}
                       </p>
                     </div>
-                    <span className="text-sm" style={{ color: "#bf4800" }}>
+                    <span className="text-sm" style={{ color: "var(--fit-accent-strong)" }}>
                       →
                     </span>
                   </Link>
@@ -96,6 +93,23 @@ export default async function WorkoutHistoryPage() {
             })}
           </ul>
         )}
+      </div>
+
+      {/* Données */}
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-1" style={{ color: "var(--fit-ink)" }}>
+          Données
+        </h2>
+        <p className="text-xs mb-4" style={{ color: "var(--fit-ink-2)" }}>
+          Téléchargez une sauvegarde complète de vos séances, mesures et réglages.
+        </p>
+        <a
+          href="/api/fitness/export"
+          download
+          className="btn-glass inline-flex items-center px-4 py-2.5 text-sm font-medium min-h-[44px]"
+        >
+          Exporter mes données (JSON)
+        </a>
       </div>
     </div>
   );

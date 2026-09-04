@@ -27,46 +27,49 @@ export default async function SleepPage() {
     .reverse()
     .map((e) => ({ date: new Date(e.date).toISOString(), durationMin: e.durationMin }));
 
-  const card: React.CSSProperties = {
-    background: "#ffffff",
-    border: "1px solid rgba(0,0,0,0.06)",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-  };
-
   return (
     <div className="space-y-6">
       {/* Statistiques */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl p-5" style={card}>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#bf4800" }}>
+        <div className="glass p-5 sm:p-6">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--fit-accent-strong)" }}
+          >
             Dernière nuit
           </p>
-          <p className="text-2xl font-bold mt-1" style={{ color: "#1d1d1f" }}>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--fit-ink)" }}>
             {last ? hours(last.durationMin) : "—"}
           </p>
           {last && (
-            <p className="text-xs mt-0.5" style={{ color: "#6e6e73" }}>
+            <p className="text-xs mt-0.5" style={{ color: "var(--fit-ink-3)" }}>
               {new Date(last.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
               {last.source === "apple-sante" && "  · Apple Santé"}
             </p>
           )}
         </div>
-        <div className="rounded-2xl p-5" style={card}>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#bf4800" }}>
+        <div className="glass p-5 sm:p-6">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--fit-accent-strong)" }}
+          >
             Moyenne 7 nuits
           </p>
-          <p className="text-2xl font-bold mt-1" style={{ color: "#1d1d1f" }}>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--fit-ink)" }}>
             {avgWeek !== null ? hours(avgWeek) : "—"}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "#6e6e73" }}>
+          <p className="text-xs mt-0.5" style={{ color: "var(--fit-ink-3)" }}>
             Objectif : ~8 h par nuit
           </p>
         </div>
-        <div className="rounded-2xl p-5 col-span-2 md:col-span-1" style={card}>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#bf4800" }}>
+        <div className="glass p-5 sm:p-6 col-span-2 md:col-span-1">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--fit-accent-strong)" }}
+          >
             Conseil Huberman
           </p>
-          <p className="text-xs mt-2 leading-relaxed" style={{ color: "#424245" }}>
+          <p className="text-xs mt-2 leading-relaxed" style={{ color: "var(--fit-ink-2)" }}>
             Régularité avant tout : mêmes horaires de coucher et de réveil chaque jour, lumière du
             soleil dans les 30–60 min après le réveil, pas de caféine après 14h.
           </p>
@@ -75,12 +78,12 @@ export default async function SleepPage() {
 
       {/* Graphique */}
       {chartPoints.length >= 2 && (
-        <div className="rounded-2xl p-6" style={card}>
+        <div className="glass p-5 sm:p-6">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-base font-bold" style={{ color: "#1d1d1f" }}>
+            <h2 className="text-base font-bold" style={{ color: "var(--fit-ink)" }}>
               14 dernières nuits
             </h2>
-            <p className="text-xs" style={{ color: "#6e6e73" }}>
+            <p className="text-xs" style={{ color: "var(--fit-ink-3)" }}>
               Ligne pointillée : objectif 8 h
             </p>
           </div>
@@ -89,30 +92,33 @@ export default async function SleepPage() {
       )}
 
       {/* Saisie manuelle */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-4" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-4" style={{ color: "var(--fit-ink)" }}>
           Enregistrer une nuit
         </h2>
         <SleepForm />
       </div>
 
       {/* Intégration Apple Santé */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-2" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-2" style={{ color: "var(--fit-ink)" }}>
           Synchronisation Apple Santé
         </h2>
-        <p className="text-sm leading-relaxed" style={{ color: "#424245" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--fit-ink-2)" }}>
           Une app web ne peut pas lire Apple Santé directement (HealthKit est réservé aux apps
           natives). La solution : un <strong>Raccourci iOS</strong> qui lit votre sommeil dans
           Santé et l&apos;envoie ici automatiquement chaque matin.
         </p>
         <details className="mt-3">
-          <summary className="text-sm font-medium cursor-pointer" style={{ color: "#bf4800" }}>
+          <summary
+            className="text-sm font-medium cursor-pointer py-2 min-h-[44px] flex items-center"
+            style={{ color: "var(--fit-accent-strong)" }}
+          >
             Créer le Raccourci (guide pas à pas)
           </summary>
           <ol
             className="mt-3 space-y-2 text-sm leading-relaxed list-decimal pl-5"
-            style={{ color: "#424245" }}
+            style={{ color: "var(--fit-ink-2)" }}
           >
             <li>
               Ouvrez l&apos;app <strong>Raccourcis</strong> → onglet Raccourcis → « + » pour créer
@@ -156,36 +162,33 @@ export default async function SleepPage() {
       </div>
 
       {/* Historique */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-4" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-4" style={{ color: "var(--fit-ink)" }}>
           Historique
         </h2>
         {entries.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6e6e73" }}>
+          <p className="text-sm" style={{ color: "var(--fit-ink-3)" }}>
             Aucune nuit enregistrée pour l&apos;instant.
           </p>
         ) : (
-          <ul className="divide-y" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+          <ul className="space-y-2">
             {entries.map((e) => (
-              <li key={e.id} className="flex items-center justify-between py-3">
+              <li key={e.id} className="glass-inset px-4 py-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium" style={{ color: "#1d1d1f" }}>
+                  <p className="text-sm font-medium" style={{ color: "var(--fit-ink)" }}>
                     {hours(e.durationMin)}
                     {e.quality && (
-                      <span className="ml-2 text-xs" style={{ color: "#6e6e73" }}>
+                      <span className="ml-2 text-xs" style={{ color: "var(--fit-ink-3)" }}>
                         Qualité {e.quality}/5
                       </span>
                     )}
                     {e.source === "apple-sante" && (
-                      <span
-                        className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                        style={{ background: "rgba(191,72,0,0.08)", color: "#bf4800" }}
-                      >
+                      <span className="pill-accent ml-2 px-2.5 py-0.5 text-[10px] font-semibold">
                         Apple Santé
                       </span>
                     )}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#6e6e73" }}>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--fit-ink-3)" }}>
                     {new Date(e.date).toLocaleDateString("fr-FR", {
                       weekday: "long",
                       day: "numeric",
@@ -196,7 +199,10 @@ export default async function SleepPage() {
                       ` · ${new Date(e.bedTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} → ${new Date(e.wakeTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`}
                   </p>
                 </div>
-                <DeleteButton url={`/api/fitness/sleep/${e.id}`} />
+                <DeleteButton
+                  url={`/api/fitness/sleep/${e.id}`}
+                  message="Supprimer cette nuit ?"
+                />
               </li>
             ))}
           </ul>

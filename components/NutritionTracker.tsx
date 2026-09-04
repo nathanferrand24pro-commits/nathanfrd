@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MEALS,
   MEAL_LABELS,
@@ -26,18 +26,6 @@ interface Goal {
   proteinG: number;
 }
 
-const card: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid rgba(0,0,0,0.06)",
-  boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-};
-
-const inputStyle: React.CSSProperties = {
-  background: "#f5f5f7",
-  border: "1px solid rgba(0,0,0,0.08)",
-  color: "#1d1d1f",
-};
-
 function shiftDay(day: string, delta: number): string {
   const d = new Date(`${day}T00:00:00`);
   d.setDate(d.getDate() + delta);
@@ -50,18 +38,28 @@ export function NutritionTracker() {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [goal, setGoal] = useState<Goal>({ calories: 2500, proteinG: 140 });
   const [loading, setLoading] = useState(true);
+  // Jour dont le chargement est le plus récent : les réponses d'un load()
+  // plus ancien sont ignorées (deux taps rapides sur ← / →).
+  const requestedDayRef = useRef(today);
 
   const load = useCallback(async (d: string) => {
+    requestedDayRef.current = d;
     setLoading(true);
     try {
       const [entriesRes, goalRes] = await Promise.all([
         fetch(`/api/fitness/food-entries?date=${d}`),
         fetch("/api/fitness/nutrition-goal"),
       ]);
-      if (entriesRes.ok) setEntries(await entriesRes.json());
-      if (goalRes.ok) setGoal(await goalRes.json());
+      const entriesData: FoodEntry[] | null = entriesRes.ok
+        ? await entriesRes.json()
+        : null;
+      const goalData: Goal | null = goalRes.ok ? await goalRes.json() : null;
+      // Réponse obsolète : un jour plus récent a été demandé entre-temps.
+      if (requestedDayRef.current !== d) return;
+      if (entriesData) setEntries(entriesData);
+      if (goalData) setGoal(goalData);
     } finally {
-      setLoading(false);
+      if (requestedDayRef.current === d) setLoading(false);
     }
   }, []);
 
@@ -83,9 +81,12 @@ export function NutritionTracker() {
     [entries]
   );
 
-  async function removeEntry(id: string) {
-    const res = await fetch(`/api/fitness/food-entries/${id}`, { method: "DELETE" });
-    if (res.ok) setEntries((prev) => prev.filter((e) => e.id !== id));
+  async function removeEntry(entry: FoodEntry) {
+    if (!confirm(`Supprimer « ${entry.name} » ?`)) return;
+    const res = await fetch(`/api/fitness/food-entries/${entry.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) setEntries((prev) => prev.filter((e) => e.id !== entry.id));
   }
 
   const dayLabel = new Date(`${day}T00:00:00`).toLocaleDateString("fr-FR", {
@@ -97,24 +98,23 @@ export function NutritionTracker() {
   return (
     <div className="space-y-6">
       {/* Navigation par jour */}
-      <div className="flex items-center justify-between rounded-2xl px-4 py-3" style={card}>
+      <div className="glass flex items-center justify-between px-4 py-3">
         <button
           onClick={() => setDay(shiftDay(day, -1))}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium"
-          style={{ color: "#bf4800", background: "rgba(191,72,0,0.08)" }}
+          className="btn-glass w-11 h-11 flex items-center justify-center text-lg shrink-0"
           aria-label="Jour précédent"
         >
           ←
         </button>
         <div className="text-center">
-          <p className="text-sm font-semibold capitalize" style={{ color: "#1d1d1f" }}>
+          <p className="text-sm font-semibold capitalize" style={{ color: "var(--fit-ink)" }}>
             {dayLabel}
           </p>
           {day !== today && (
             <button
               onClick={() => setDay(today)}
-              className="text-xs font-medium"
-              style={{ color: "#bf4800" }}
+              className="text-xs font-medium px-3 py-2"
+              style={{ color: "var(--fit-accent-strong)" }}
             >
               Revenir à aujourd&apos;hui
             </button>
@@ -123,8 +123,7 @@ export function NutritionTracker() {
         <button
           onClick={() => setDay(shiftDay(day, 1))}
           disabled={day >= today}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-30"
-          style={{ color: "#bf4800", background: "rgba(191,72,0,0.08)" }}
+          className="btn-glass w-11 h-11 flex items-center justify-center text-lg shrink-0 disabled:opacity-30"
           aria-label="Jour suivant"
         >
           →
@@ -132,46 +131,64 @@ export function NutritionTracker() {
       </div>
 
       {/* Totaux vs objectifs */}
-      <div className="rounded-2xl p-6" style={card}>
-        <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-base font-bold" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
+          <h2 className="text-base font-bold" style={{ color: "var(--fit-ink)" }}>
             Bilan du jour
           </h2>
           <GoalEditor goal={goal} onSaved={setGoal} />
         </div>
-        <div className="space-y-3">
-          <ProgressRow
-            label="Calories"
-            value={Math.round(totals.kcal)}
-            target={goal.calories}
-            unit="kcal"
-          />
-          <ProgressRow
-            label="Protéines"
-            value={Math.round(totals.protein)}
-            target={goal.proteinG}
-            unit="g"
-          />
-        </div>
-        <p className="text-xs mt-4" style={{ color: "#6e6e73" }}>
-          Glucides : {Math.round(totals.carbs)} g · Lipides : {Math.round(totals.fat)} g
-        </p>
+        {loading ? (
+          <div className="space-y-3" aria-label="Chargement du bilan">
+            <div
+              className="h-2.5 rounded-full animate-pulse"
+              style={{ background: "var(--fit-track)" }}
+            />
+            <div
+              className="h-2.5 rounded-full animate-pulse"
+              style={{ background: "var(--fit-track)" }}
+            />
+            <p className="text-xs" style={{ color: "var(--fit-ink-3)" }}>
+              Chargement…
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              <ProgressRow
+                label="Calories"
+                value={Math.round(totals.kcal)}
+                target={goal.calories}
+                unit="kcal"
+              />
+              <ProgressRow
+                label="Protéines"
+                value={Math.round(totals.protein)}
+                target={goal.proteinG}
+                unit="g"
+              />
+            </div>
+            <p className="text-xs mt-4" style={{ color: "var(--fit-ink-2)" }}>
+              Glucides : {Math.round(totals.carbs)} g · Lipides : {Math.round(totals.fat)} g
+            </p>
+          </>
+        )}
       </div>
 
       {/* Ajout d'un aliment */}
       <AddFoodCard day={day} onAdded={(entry) => setEntries((prev) => [...prev, entry])} />
 
       {/* Entrées par repas */}
-      <div className="rounded-2xl p-6" style={card}>
-        <h2 className="text-base font-bold mb-4" style={{ color: "#1d1d1f" }}>
+      <div className="glass p-5 sm:p-6">
+        <h2 className="text-base font-bold mb-4" style={{ color: "var(--fit-ink)" }}>
           Journal alimentaire
         </h2>
         {loading ? (
-          <p className="text-sm" style={{ color: "#6e6e73" }}>
+          <p className="text-sm" style={{ color: "var(--fit-ink-3)" }}>
             Chargement…
           </p>
         ) : entries.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6e6e73" }}>
+          <p className="text-sm" style={{ color: "var(--fit-ink-2)" }}>
             Rien d&apos;enregistré ce jour. Ajoutez un aliment ci-dessus.
           </p>
         ) : (
@@ -183,10 +200,10 @@ export function NutritionTracker() {
               return (
                 <div key={meal}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="text-sm font-semibold" style={{ color: "#1d1d1f" }}>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--fit-ink)" }}>
                       {MEAL_LABELS[meal]}
                     </h3>
-                    <span className="text-xs tabular-nums" style={{ color: "#6e6e73" }}>
+                    <span className="text-xs tabular-nums" style={{ color: "var(--fit-ink-3)" }}>
                       {mealKcal} kcal
                     </span>
                   </div>
@@ -194,22 +211,21 @@ export function NutritionTracker() {
                     {mealEntries.map((e) => (
                       <li
                         key={e.id}
-                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
-                        style={{ background: "#f5f5f7" }}
+                        className="glass-inset flex items-center justify-between gap-2 px-3 py-2 text-sm"
                       >
                         <div className="min-w-0">
-                          <p className="truncate" style={{ color: "#424245" }}>
+                          <p className="truncate" style={{ color: "var(--fit-ink-2)" }}>
                             {e.name}
                           </p>
-                          <p className="text-xs" style={{ color: "#6e6e73" }}>
+                          <p className="text-xs" style={{ color: "var(--fit-ink-3)" }}>
                             {e.quantityG} g · {Math.round(e.calories)} kcal · P{" "}
                             {Math.round(e.proteinG)} g
                           </p>
                         </div>
                         <button
-                          onClick={() => removeEntry(e.id)}
-                          className="text-xs font-medium shrink-0"
-                          style={{ color: "#d70015" }}
+                          onClick={() => removeEntry(e)}
+                          className="shrink-0 px-3 py-2.5 min-h-[44px] text-xs font-medium"
+                          style={{ color: "var(--fit-danger)" }}
                         >
                           Supprimer
                         </button>
@@ -237,22 +253,33 @@ function ProgressRow({
   target: number;
   unit: string;
 }) {
-  const pct = Math.min(100, (value / target) * 100);
+  const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0;
   const over = value > target * 1.05;
+  const reached = !over && value >= target;
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm w-24 shrink-0" style={{ color: "#424245" }}>
+      <span className="text-sm w-24 shrink-0" style={{ color: "var(--fit-ink-2)" }}>
         {label}
       </span>
-      <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#e8e8ed" }}>
+      <div
+        className="flex-1 h-2.5 rounded-full overflow-hidden"
+        style={{ background: "var(--fit-track)" }}
+      >
         <div
           className="h-full rounded-full"
-          style={{ width: `${pct}%`, background: over ? "#d70015" : "#bf4800" }}
+          style={{
+            width: `${pct}%`,
+            background: over
+              ? "var(--fit-danger)"
+              : reached
+                ? "var(--fit-accent-strong)"
+                : "var(--fit-accent)",
+          }}
         />
       </div>
       <span
         className="text-xs w-28 text-right tabular-nums shrink-0"
-        style={{ color: "#6e6e73" }}
+        style={{ color: "var(--fit-ink-3)" }}
       >
         {value.toLocaleString("fr-FR")} / {target.toLocaleString("fr-FR")} {unit}
       </span>
@@ -291,48 +318,55 @@ function GoalEditor({ goal, onSaved }: { goal: Goal; onSaved: (g: Goal) => void 
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs font-medium"
-        style={{ color: "#bf4800" }}
+        className="text-xs font-medium px-3 py-2.5 min-h-[44px]"
+        style={{ color: "var(--fit-accent-strong)" }}
       >
         Modifier les objectifs
       </button>
     );
   }
   return (
-    <div className="flex items-end gap-2 flex-wrap justify-end">
-      <label className="flex flex-col gap-1 w-24">
-        <span className="text-[10px] font-medium" style={{ color: "#6e6e73" }}>
-          kcal / jour
-        </span>
-        <input
-          type="number"
-          value={calories}
-          onChange={(e) => setCalories(e.target.value)}
-          className="rounded-lg px-2 py-1.5 text-sm"
-          style={inputStyle}
-        />
-      </label>
-      <label className="flex flex-col gap-1 w-24">
-        <span className="text-[10px] font-medium" style={{ color: "#6e6e73" }}>
-          protéines (g)
-        </span>
-        <input
-          type="number"
-          value={proteinG}
-          onChange={(e) => setProteinG(e.target.value)}
-          className="rounded-lg px-2 py-1.5 text-sm"
-          style={inputStyle}
-        />
-      </label>
-      <button
-        onClick={save}
-        className="px-3 py-1.5 rounded-full text-xs font-medium"
-        style={{ background: "#bf4800", color: "#ffffff" }}
-      >
-        OK
-      </button>
+    <div className="glass-inset w-full px-4 py-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 w-28">
+          <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+            kcal / jour
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={calories}
+            onChange={(e) => setCalories(e.target.value)}
+            className="fit-input px-3 py-2.5 text-base"
+          />
+        </label>
+        <label className="flex flex-col gap-1 w-28">
+          <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+            protéines (g)
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={proteinG}
+            onChange={(e) => setProteinG(e.target.value)}
+            className="fit-input px-3 py-2.5 text-base"
+          />
+        </label>
+        <button onClick={save} className="btn-accent px-5 py-2.5 text-sm font-medium">
+          OK
+        </button>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+          }}
+          className="btn-glass px-4 py-2.5 text-sm font-medium"
+        >
+          Annuler
+        </button>
+      </div>
       {error && (
-        <p className="text-xs w-full text-right" style={{ color: "#d70015" }}>
+        <p className="text-xs mt-2" style={{ color: "var(--fit-danger)" }}>
           {error}
         </p>
       )}
@@ -354,7 +388,15 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
   // Commun
   const [quantity, setQuantity] = useState("100");
   const [saving, setSaving] = useState(false);
+  const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (addedTimerRef.current) clearTimeout(addedTimerRef.current);
+    };
+  }, []);
 
   // Saisie manuelle (valeurs pour la quantité saisie)
   const [manualName, setManualName] = useState("");
@@ -398,6 +440,10 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
       setManualName("");
       setManualKcal("");
       setManualProtein("");
+      // Feedback bref « Ajouté ✓ » sur le bouton.
+      setAdded(true);
+      if (addedTimerRef.current) clearTimeout(addedTimerRef.current);
+      addedTimerRef.current = setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -405,21 +451,21 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
     }
   }
 
+  const addLabel = saving ? "Ajout…" : added ? "Ajouté ✓" : "+ Ajouter";
   const qty = Number(quantity) || 0;
   const factor = qty / 100;
 
   return (
-    <div className="rounded-2xl p-6" style={card}>
+    <div className="glass p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-base font-bold" style={{ color: "#1d1d1f" }}>
+        <h2 className="text-base font-bold" style={{ color: "var(--fit-ink)" }}>
           Ajouter un aliment
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={meal}
             onChange={(e) => setMeal(e.target.value as Meal)}
-            className="rounded-lg px-3 py-1.5 text-sm"
-            style={inputStyle}
+            className="fit-input px-3 py-2.5 text-base"
           >
             {MEALS.map((m) => (
               <option key={m} value={m}>
@@ -427,16 +473,16 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
               </option>
             ))}
           </select>
-          <div className="flex rounded-lg overflow-hidden" style={{ background: "#f5f5f7" }}>
+          <div className="glass-inset flex p-1">
             {(["recherche", "manuel"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="px-3 py-1.5 text-xs font-medium"
+                className="px-3 py-2 rounded-lg text-xs font-medium"
                 style={
                   mode === m
-                    ? { background: "#bf4800", color: "#ffffff" }
-                    : { color: "#6e6e73" }
+                    ? { background: "var(--fit-accent)", color: "#ffffff" }
+                    : { color: "var(--fit-ink-2)" }
                 }
               >
                 {m === "recherche" ? "Rechercher" : "Manuel"}
@@ -454,22 +500,20 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Poulet, riz basmati, skyr…"
-              className="flex-1 rounded-lg px-3 py-2 text-sm"
-              style={inputStyle}
+              className="fit-input flex-1 min-w-0 px-3 py-2.5 text-base"
               minLength={2}
               required
             />
             <button
               type="submit"
               disabled={searching}
-              className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-              style={{ background: "#bf4800", color: "#ffffff" }}
+              className="btn-accent px-4 py-2.5 text-sm font-medium shrink-0"
             >
               {searching ? "Recherche…" : "Rechercher"}
             </button>
           </form>
           {searchError && (
-            <p className="text-xs" style={{ color: "#d70015" }}>
+            <p className="text-xs" style={{ color: "var(--fit-danger)" }}>
               {searchError}
             </p>
           )}
@@ -479,16 +523,15 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
                 <li key={i}>
                   <button
                     onClick={() => setSelected(r)}
-                    className="w-full text-left rounded-lg px-3 py-2 text-sm"
-                    style={{ background: "#f5f5f7" }}
+                    className="glass-inset w-full text-left px-4 py-3 text-sm"
                   >
-                    <span style={{ color: "#1d1d1f" }}>{r.name}</span>
+                    <span style={{ color: "var(--fit-ink)" }}>{r.name}</span>
                     {r.brand && (
-                      <span className="ml-1.5 text-xs" style={{ color: "#6e6e73" }}>
+                      <span className="ml-1.5 text-xs" style={{ color: "var(--fit-ink-3)" }}>
                         {r.brand}
                       </span>
                     )}
-                    <span className="block text-xs mt-0.5" style={{ color: "#6e6e73" }}>
+                    <span className="block text-xs mt-0.5" style={{ color: "var(--fit-ink-3)" }}>
                       {Math.round(r.per100g.kcal)} kcal · P {r.per100g.proteinG.toFixed(1)} g · G{" "}
                       {r.per100g.carbsG.toFixed(1)} g · L {r.per100g.fatG.toFixed(1)} g — pour 100 g
                     </span>
@@ -498,61 +541,63 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
             </ul>
           )}
           {selected && (
-            <div className="rounded-xl p-4" style={{ background: "#f5f5f7" }}>
-              <p className="text-sm font-medium" style={{ color: "#1d1d1f" }}>
+            <div className="glass-inset px-4 py-3">
+              <p className="text-sm font-medium" style={{ color: "var(--fit-ink)" }}>
                 {selected.name}
                 {selected.brand && (
-                  <span className="ml-1.5 text-xs font-normal" style={{ color: "#6e6e73" }}>
+                  <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--fit-ink-3)" }}>
                     {selected.brand}
                   </span>
                 )}
               </p>
-              <div className="flex flex-wrap items-end gap-3 mt-3">
-                <label className="flex flex-col gap-1 w-28">
-                  <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
-                    Quantité (g)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={5000}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="rounded-lg px-3 py-2 text-sm"
-                    style={{ ...inputStyle, background: "#ffffff" }}
-                  />
-                </label>
-                <p className="text-sm py-2" style={{ color: "#424245" }}>
-                  = {Math.round(selected.per100g.kcal * factor)} kcal · P{" "}
-                  {(selected.per100g.proteinG * factor).toFixed(1)} g
-                </p>
-                <button
-                  onClick={() =>
-                    add({
-                      name: selected.brand
-                        ? `${selected.name} (${selected.brand})`
-                        : selected.name,
-                      quantityG: qty,
-                      calories: selected.per100g.kcal * factor,
-                      proteinG: selected.per100g.proteinG * factor,
-                      carbsG: selected.per100g.carbsG * factor,
-                      fatG: selected.per100g.fatG * factor,
-                      source: "openfoodfacts",
-                    })
-                  }
-                  disabled={saving || qty <= 0}
-                  className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-                  style={{ background: "#bf4800", color: "#ffffff" }}
-                >
-                  {saving ? "Ajout…" : "+ Ajouter"}
-                </button>
-                <button
-                  onClick={() => setSelected(null)}
-                  className="text-xs font-medium py-2"
-                  style={{ color: "#6e6e73" }}
-                >
-                  Annuler
-                </button>
+              <div className="mt-3 space-y-3">
+                <div className="flex items-end gap-3">
+                  <label className="flex flex-col gap-1 w-28">
+                    <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+                      Quantité (g)
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={5000}
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      className="fit-input px-3 py-2.5 text-base"
+                    />
+                  </label>
+                  <p className="text-sm py-2.5" style={{ color: "var(--fit-ink-2)" }}>
+                    = {Math.round(selected.per100g.kcal * factor)} kcal · P{" "}
+                    {(selected.per100g.proteinG * factor).toFixed(1)} g
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      add({
+                        name: selected.brand
+                          ? `${selected.name} (${selected.brand})`
+                          : selected.name,
+                        quantityG: qty,
+                        calories: selected.per100g.kcal * factor,
+                        proteinG: selected.per100g.proteinG * factor,
+                        carbsG: selected.per100g.carbsG * factor,
+                        fatG: selected.per100g.fatG * factor,
+                        source: "openfoodfacts",
+                      })
+                    }
+                    disabled={saving || qty <= 0}
+                    className="btn-accent px-5 py-2.5 text-sm font-medium"
+                  >
+                    {addLabel}
+                  </button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="btn-glass px-4 py-2.5 text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -569,10 +614,10 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
               source: "manuel",
             });
           }}
-          className="flex flex-wrap items-end gap-3"
+          className="space-y-3"
         >
-          <label className="flex flex-col gap-1 flex-1 min-w-40">
-            <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
               Aliment
             </span>
             <input
@@ -580,69 +625,70 @@ function AddFoodCard({ day, onAdded }: { day: string; onAdded: (e: FoodEntry) =>
               value={manualName}
               onChange={(e) => setManualName(e.target.value)}
               placeholder="Omelette 3 œufs"
-              className="rounded-lg px-3 py-2 text-sm"
-              style={inputStyle}
+              className="fit-input px-3 py-2.5 text-base"
               required
             />
           </label>
-          <label className="flex flex-col gap-1 w-24">
-            <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
-              Quantité (g)
-            </span>
-            <input
-              type="number"
-              min={1}
-              max={5000}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="rounded-lg px-3 py-2 text-sm"
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 w-24">
-            <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
-              Calories
-            </span>
-            <input
-              type="number"
-              min={0}
-              max={10000}
-              value={manualKcal}
-              onChange={(e) => setManualKcal(e.target.value)}
-              placeholder="250"
-              className="rounded-lg px-3 py-2 text-sm"
-              style={inputStyle}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 w-24">
-            <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
-              Protéines (g)
-            </span>
-            <input
-              type="number"
-              min={0}
-              max={1000}
-              value={manualProtein}
-              onChange={(e) => setManualProtein(e.target.value)}
-              placeholder="20"
-              className="rounded-lg px-3 py-2 text-sm"
-              style={inputStyle}
-            />
-          </label>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+                Quantité (g)
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={5000}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="fit-input w-full px-3 py-2.5 text-base"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+                Calories
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={10000}
+                value={manualKcal}
+                onChange={(e) => setManualKcal(e.target.value)}
+                placeholder="250"
+                className="fit-input w-full px-3 py-2.5 text-base"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium" style={{ color: "var(--fit-ink-3)" }}>
+                Protéines (g)
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={1000}
+                step="any"
+                value={manualProtein}
+                onChange={(e) => setManualProtein(e.target.value)}
+                placeholder="20"
+                className="fit-input w-full px-3 py-2.5 text-base"
+              />
+            </label>
+          </div>
           <button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-            style={{ background: "#bf4800", color: "#ffffff" }}
+            className="btn-accent w-full sm:w-auto px-5 py-2.5 text-sm font-medium"
           >
-            {saving ? "Ajout…" : "+ Ajouter"}
+            {addLabel}
           </button>
         </form>
       )}
       {error && (
-        <p className="text-xs mt-2" style={{ color: "#d70015" }}>
+        <p className="text-xs mt-2" style={{ color: "var(--fit-danger)" }}>
           {error}
         </p>
       )}

@@ -9,6 +9,7 @@ export function AddExerciseForm() {
   const [name, setName] = useState("");
   const [muscleGroup, setMuscleGroup] = useState<string>(MUSCLE_GROUPS[0]);
   const [saving, setSaving] = useState(false);
+  const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
@@ -24,6 +25,8 @@ export function AddExerciseForm() {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Erreur lors de l'ajout");
       setName("");
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -32,37 +35,29 @@ export function AddExerciseForm() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    background: "#f5f5f7",
-    border: "1px solid rgba(0,0,0,0.08)",
-    color: "#1d1d1f",
-  };
-
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-      <label className="flex flex-col gap-1 flex-1 min-w-48">
-        <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
+    <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <label className="flex flex-col gap-1 flex-1">
+        <span className="text-xs font-medium" style={{ color: "var(--fit-ink-2)" }}>
           Nom de l&apos;exercice
         </span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-lg px-3 py-2 text-sm"
-          style={inputStyle}
+          className="fit-input px-3 py-2.5 text-base"
           placeholder="Hip thrust"
           required
         />
       </label>
-      <label className="flex flex-col gap-1 w-44">
-        <span className="text-xs font-medium" style={{ color: "#6e6e73" }}>
+      <label className="flex flex-col gap-1 sm:w-48">
+        <span className="text-xs font-medium" style={{ color: "var(--fit-ink-2)" }}>
           Groupe musculaire
         </span>
         <select
           value={muscleGroup}
           onChange={(e) => setMuscleGroup(e.target.value)}
-          className="rounded-lg px-3 py-2 text-sm"
-          style={inputStyle}
+          className="fit-input px-3 py-2.5 text-base"
         >
           {MUSCLE_GROUPS.map((g) => (
             <option key={g} value={g}>
@@ -74,13 +69,12 @@ export function AddExerciseForm() {
       <button
         type="submit"
         disabled={saving}
-        className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-        style={{ background: "#bf4800", color: "#ffffff" }}
+        className="btn-accent px-5 py-2.5 text-sm font-medium min-h-[44px] disabled:opacity-50"
       >
-        {saving ? "Ajout…" : "+ Ajouter"}
+        {saving ? "Ajout…" : added ? "Ajouté ✓" : "+ Ajouter"}
       </button>
       {error && (
-        <p className="text-xs w-full" style={{ color: "#d70015" }}>
+        <p className="text-xs w-full" style={{ color: "var(--fit-danger)" }}>
           {error}
         </p>
       )}

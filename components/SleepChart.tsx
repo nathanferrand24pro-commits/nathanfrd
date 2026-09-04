@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface SleepPoint {
   date: string; // ISO
@@ -13,8 +13,33 @@ const PAD = { top: 14, right: 12, bottom: 26, left: 40 };
 const TARGET_MIN = 8 * 60; // objectif Huberman : ~8 h par nuit
 
 // Barres de durée de sommeil par nuit (ordre chronologique), repère à 8 h.
+// Tooltip utilisable au doigt : un tap sur une barre le fixe, un tap ailleurs le ferme.
 export function SleepChart({ points }: { points: SleepPoint[] }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const [active, setActive] = useState<number | null>(null);
+  const [pinned, setPinned] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Tap en dehors du graphique : ferme le tooltip fixé.
+  useEffect(() => {
+    if (!pinned) return;
+    const close = (e: Event) => {
+      const el = containerRef.current;
+      if (el && e.target instanceof Node && el.contains(e.target)) return;
+      setPinned(false);
+      setActive(null);
+    };
+    document.addEventListener("click", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("click", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [pinned]);
+
+  const pin = (i: number) => {
+    setActive(i);
+    setPinned(true);
+  };
 
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
@@ -32,13 +57,20 @@ export function SleepChart({ points }: { points: SleepPoint[] }) {
   const yTicks = [0, 4 * 60, 8 * 60];
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto"
         role="img"
         aria-label="Durée de sommeil par nuit"
-        onMouseLeave={() => setHover(null)}
+        onMouseLeave={() => {
+          if (!pinned) setActive(null);
+        }}
+        onClick={() => {
+          // Tap sur le fond du graphique (hors zones de barre) : ferme le tooltip.
+          setPinned(false);
+          setActive(null);
+        }}
       >
         {yTicks.map((t, i) => (
           <g key={t}>
@@ -47,10 +79,16 @@ export function SleepChart({ points }: { points: SleepPoint[] }) {
               x2={W - PAD.right}
               y1={yFor(t)}
               y2={yFor(t)}
-              stroke="#e8e8ed"
+              stroke="var(--fit-grid)"
               strokeWidth={1}
             />
-            <text x={PAD.left - 6} y={yFor(t) + 3.5} textAnchor="end" fontSize={10} fill="#6e6e73">
+            <text
+              x={PAD.left - 6}
+              y={yFor(t) + 3.5}
+              textAnchor="end"
+              fontSize={10}
+              fill="var(--fit-ink-3)"
+            >
               {i === yTicks.length - 1 ? `${t / 60} h` : t / 60}
             </text>
           </g>
@@ -62,7 +100,7 @@ export function SleepChart({ points }: { points: SleepPoint[] }) {
           x2={W - PAD.right}
           y1={yFor(TARGET_MIN)}
           y2={yFor(TARGET_MIN)}
-          stroke="#6e6e73"
+          stroke="var(--fit-ink-2)"
           strokeWidth={1}
           strokeDasharray="4 3"
         />
@@ -72,14 +110,21 @@ export function SleepChart({ points }: { points: SleepPoint[] }) {
           const y = yFor(p.durationMin);
           return (
             <g key={p.date}>
-              {/* Zone de survol plus large que la barre */}
+              {/* Zone de survol/tap plus large que la barre */}
               <rect
                 x={PAD.left + i * slot}
                 y={PAD.top}
                 width={slot}
                 height={innerH}
                 fill="transparent"
-                onMouseEnter={() => setHover(i)}
+                onMouseEnter={() => {
+                  if (!pinned) setActive(i);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  pin(i);
+                }}
+                onTouchStart={() => pin(i)}
               />
               <rect
                 x={x}
@@ -87,38 +132,39 @@ export function SleepChart({ points }: { points: SleepPoint[] }) {
                 width={barW}
                 height={PAD.top + innerH - y}
                 rx={4}
-                fill="#bf4800"
-                opacity={hover === null || hover === i ? 1 : 0.45}
+                fill="var(--fit-accent)"
+                opacity={active === null || active === i ? 1 : 0.45}
+                style={{ pointerEvents: "none" }}
               />
             </g>
           );
         })}
 
         {/* Dates première / dernière */}
-        <text x={PAD.left} y={H - 8} textAnchor="start" fontSize={10} fill="#6e6e73">
+        <text x={PAD.left} y={H - 8} textAnchor="start" fontSize={10} fill="var(--fit-ink-3)">
           {fmtDate(points[0].date)}
         </text>
         {points.length > 1 && (
-          <text x={W - PAD.right} y={H - 8} textAnchor="end" fontSize={10} fill="#6e6e73">
+          <text x={W - PAD.right} y={H - 8} textAnchor="end" fontSize={10} fill="var(--fit-ink-3)">
             {fmtDate(points[points.length - 1].date)}
           </text>
         )}
       </svg>
 
-      {hover !== null && (
+      {active !== null && (
         <div
           className="absolute pointer-events-none px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap"
           style={{
-            left: `${((PAD.left + hover * slot + slot / 2) / W) * 100}%`,
+            left: `${((PAD.left + active * slot + slot / 2) / W) * 100}%`,
             top: 0,
-            transform: `translateX(${hover > points.length * 0.7 ? "-100%" : "8px"})`,
-            background: "#1d1d1f",
+            transform: `translateX(${active > points.length * 0.7 ? "-100%" : "8px"})`,
+            background: "#1c1e1d",
             color: "#f5f5f7",
             boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
           }}
         >
-          <span className="font-semibold">{hours(points[hover].durationMin)}</span> —{" "}
-          {fmtDate(points[hover].date)}
+          <span className="font-semibold">{hours(points[active].durationMin)}</span> —{" "}
+          {fmtDate(points[active].date)}
         </div>
       )}
     </div>
