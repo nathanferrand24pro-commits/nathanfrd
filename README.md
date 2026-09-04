@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Fitness — Protocole Huberman
+
+L'application inclut un suivi du protocole « Foundational Fitness » d'Andrew Huberman, accessible sur [`/fitness`](http://localhost:3000/fitness) :
+
+- **Tableau de bord** : séance du jour selon le planning hebdomadaire (3 musculations + 3 cardios), phase du mois (alternance force / hypertrophie), volume de séries par groupe musculaire vs l'objectif de ~10 séries/semaine.
+- **Journal de séance** : enregistrement des séries (exercice, répétitions, charge), durée et notes.
+- **Exercices** : bibliothèque pré-remplie (jambes, poitrine, dos, épaules, bras, mollets, cou, abdominaux), extensible.
+- **Progression** : records personnels et courbes de charge maximale par exercice.
+
+Après un `git pull`, appliquer les migrations : `npx prisma migrate dev`.
+
 ## Getting Started
 
 First, run the development server:

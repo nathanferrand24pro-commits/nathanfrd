@@ -32,6 +32,38 @@ model Article {
   createdAt   DateTime @default(now())
 }
 
+model Exercise {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  muscleGroup String       // "jambes" | "poitrine" | "dos" | "epaules" | "bras" | "mollets" | "cou" | "abdos"
+  isDefault   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  sets        WorkoutSet[]
+}
+
+model Workout {
+  id          String       @id @default(cuid())
+  date        DateTime     @default(now())
+  dayType     String       // "jambes" | "torse" | "bras" | "endurance" | "cardio" | "hiit" | "recuperation"
+  phase       String?      // "force" | "hypertrophie" (musculation uniquement)
+  durationMin Int?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  sets        WorkoutSet[]
+}
+
+model WorkoutSet {
+  id         String   @id @default(cuid())
+  workoutId  String
+  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  setNumber  Int
+  reps       Int
+  weightKg   Float    @default(0)
+  createdAt  DateTime @default(now())
+}
+
 model AlertSubscription {
   id        String   @id @default(cuid())
   email     String   @unique
