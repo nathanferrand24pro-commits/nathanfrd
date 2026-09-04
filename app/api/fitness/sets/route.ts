@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     (await prisma.workoutSet.count({ where: { workoutId, exerciseId } })) + 1;
 
   const set = await prisma.workoutSet.create({
-    data: { workoutId, exerciseId, setNumber, reps, weightKg },
+    data: { workoutId, exerciseId, setNumber, reps, weightKg, isWarmup: body.isWarmup === true },
     include: { exercise: true },
   });
   return NextResponse.json(set, { status: 201 });

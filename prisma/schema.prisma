@@ -42,14 +42,17 @@ model Exercise {
 }
 
 model Workout {
-  id          String       @id @default(cuid())
-  date        DateTime     @default(now())
-  dayType     String       // "jambes" | "torse" | "bras" | "endurance" | "cardio" | "hiit" | "recuperation"
-  phase       String?      // "force" | "hypertrophie" (musculation uniquement)
-  durationMin Int?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  sets        WorkoutSet[]
+  id           String       @id @default(cuid())
+  date         DateTime     @default(now())
+  dayType      String       // "jambes" | "torse" | "bras" | "endurance" | "cardio" | "hiit" | "recuperation"
+  phase        String?      // "force" | "hypertrophie" (musculation uniquement)
+  durationMin  Int?
+  distanceKm   Float? // cardio
+  avgHeartRate Int? // cardio — FC moyenne
+  rpe          Int? // effort perçu 1–10
+  notes        String?
+  createdAt    DateTime     @default(now())
+  sets         WorkoutSet[]
 }
 
 model WorkoutSet {
@@ -61,7 +64,29 @@ model WorkoutSet {
   setNumber  Int
   reps       Int
   weightKg   Float    @default(0)
+  isWarmup   Boolean  @default(false) // exclu du volume, des records et des courbes
   createdAt  DateTime @default(now())
+}
+
+model BodyWeightEntry {
+  id        String   @id @default(cuid())
+  date      DateTime @unique // jour (minuit) — une pesée par jour
+  weightKg  Float
+  createdAt DateTime @default(now())
+}
+
+model WaterEntry {
+  id        String   @id @default(cuid())
+  date      DateTime // jour (minuit)
+  amountMl  Int
+  createdAt DateTime @default(now())
+}
+
+model FitnessSetting {
+  id            String   @id @default("default")
+  phaseOverride String? // "force" | "hypertrophie" | null = auto (parité du mois)
+  waterGoalMl   Int      @default(2500)
+  updatedAt     DateTime @updatedAt
 }
 
 model FoodEntry {

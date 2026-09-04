@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
-import { DAY_TYPE_LABELS, DayType, currentPhase } from "../../../../lib/fitness";
+import { DAY_TYPE_LABELS, DayType, resolvePhase } from "../../../../lib/fitness";
 
 export async function GET() {
   const workouts = await prisma.workout.findMany({
@@ -19,18 +19,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Type de séance invalide" }, { status: 400 });
   }
 
-  const date = body.date ? new Date(body.date) : new Date();
+  // "YYYY-MM-DD" est interprété en heure locale (minuit), pas en UTC.
+  const date =
+    typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+      ? new Date(`${body.date}T00:00:00`)
+      : body.date
+        ? new Date(body.date)
+        : new Date();
   if (isNaN(date.getTime())) {
     return NextResponse.json({ error: "Date invalide" }, { status: 400 });
   }
 
   const isResistance = ["jambes", "torse", "bras"].includes(dayType);
+  const setting = await prisma.fitnessSetting.findUnique({ where: { id: "default" } });
 
   const workout = await prisma.workout.create({
     data: {
       dayType,
       date,
-      phase: isResistance ? currentPhase(date) : null,
+      phase: isResistance ? resolvePhase(date, setting?.phaseOverride) : null,
       durationMin: typeof body.durationMin === "number" ? body.durationMin : null,
       notes: typeof body.notes === "string" && body.notes.trim() ? body.notes.trim() : null,
     },

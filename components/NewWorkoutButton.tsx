@@ -8,10 +8,12 @@ export function NewWorkoutButton({
   dayType,
   label,
   primary = false,
+  date,
 }: {
   dayType: DayType;
   label: string;
   primary?: boolean;
+  date?: string; // YYYY-MM-DD — par défaut aujourd'hui
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ export function NewWorkoutButton({
       const res = await fetch("/api/fitness/workouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dayType }),
+        body: JSON.stringify(date ? { dayType, date } : { dayType }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
