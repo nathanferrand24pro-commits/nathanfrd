@@ -8,11 +8,17 @@ L'application inclut un suivi du protocole « Foundational Fitness » d'Andrew H
 - **Journal de séance** : enregistrement des séries (exercice, répétitions, charge), durée et notes.
 - **Exercices** : bibliothèque pré-remplie (jambes, poitrine, dos, épaules, bras, mollets, cou, abdominaux), extensible.
 - **Progression** : records personnels et courbes de charge maximale par exercice.
+- **Calendrier** : programme concret de chaque jour du protocole (échauffement, exercices ordonnés avec séries × répétitions × repos selon la phase force/hypertrophie, détail des séances cardio), grille mensuelle avec les séances réalisées.
 - **Nutrition** : suivi calorique journalier par repas avec recherche d'aliments via l'API Open Food Facts (ou saisie manuelle), objectifs calories/protéines modifiables.
-- **Sommeil** : saisie des nuits (coucher/réveil/qualité), graphique des 14 dernières nuits, et synchronisation Apple Santé via un Raccourci iOS qui envoie la durée de sommeil sur `POST /api/fitness/sleep` (guide pas à pas sur la page Sommeil). Pour protéger cet endpoint en déploiement public, définir la variable d'environnement `FITNESS_API_TOKEN`.
-- **App iPhone (PWA)** : l'app est installable sur l'écran d'accueil (Safari → Partager → « Sur l'écran d'accueil »), s'ouvre en plein écran sur `/fitness` avec une barre d'onglets en bas façon app native.
+- **Sommeil** : saisie des nuits (coucher/réveil/qualité), graphique des 14 dernières nuits, et synchronisation Apple Santé via un Raccourci iOS qui envoie la durée de sommeil sur `POST /api/fitness/sleep` (guide pas à pas sur la page Sommeil).
+- **Wellness** : poids corporel (courbe + moyenne mobile), hydratation, minuteur de repos par phase, « la dernière fois » avec pré-remplissage des charges, séries d'échauffement exclues des statistiques, détails cardio (distance, FC, RPE), régularité hebdomadaire, export JSON (`GET /api/fitness/export`).
+- **App iPhone (PWA)** : installable depuis Safari (Partager → « Sur l'écran d'accueil »), plein écran sur `/fitness`, barre d'onglets basse, design « liquid glass » sobre.
 
-Après un `git pull`, appliquer les migrations : `npx prisma migrate dev`.
+Notes de déploiement :
+
+- **Fuseau horaire** : les calculs de « jour » (nutrition, sommeil, semaine du protocole) suivent le fuseau du serveur. `instrumentation.ts` force `TZ=Europe/Paris` par défaut ; définir la variable `TZ` pour un autre fuseau.
+- **`FITNESS_API_TOKEN`** ne protège que `POST /api/fitness/sleep` (le webhook du Raccourci iOS). Les autres routes n'ont pas d'authentification : pour un déploiement public, protéger l'app au niveau de la plateforme (protection Vercel, Basic Auth de reverse-proxy, ou Cloudflare Access).
+- Après un `git pull`, appliquer les migrations : `npx prisma migrate dev`.
 
 ## Getting Started
 

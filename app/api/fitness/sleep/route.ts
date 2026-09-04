@@ -11,7 +11,6 @@ export async function GET() {
 }
 
 // Convertit "23:15" ou un ISO complet en Date, relative au jour du réveil.
-// Une heure >= 15h est interprétée comme la veille (coucher), sinon le jour même.
 function parseTime(value: unknown, wakeDay: Date): Date | null {
   if (typeof value !== "string" || !value) return null;
   const hm = value.match(/^(\d{1,2}):(\d{2})$/);
@@ -20,7 +19,6 @@ function parseTime(value: unknown, wakeDay: Date): Date | null {
     const m = Number(hm[2]);
     if (h > 23 || m > 59) return null;
     const d = new Date(wakeDay);
-    if (h >= 15) d.setDate(d.getDate() - 1);
     d.setHours(h, m, 0, 0);
     return d;
   }
@@ -43,8 +41,16 @@ export async function POST(request: NextRequest) {
 
   const date =
     (typeof body.date === "string" ? parseDayParam(body.date) : null) ?? startOfDay(new Date());
-  const bedTime = parseTime(body.bedTime, date);
+  let bedTime = parseTime(body.bedTime, date);
   const wakeTime = parseTime(body.wakeTime, date);
+
+  // Les deux heures sont d'abord posées sur le jour du réveil ; un coucher
+  // postérieur ou égal au réveil est donc la veille (23h → 7h). Une sieste
+  // (14h → 15h30) reste sur le même jour.
+  if (bedTime && wakeTime && bedTime >= wakeTime) {
+    bedTime = new Date(bedTime);
+    bedTime.setDate(bedTime.getDate() - 1);
+  }
 
   let durationMin = Number(body.durationMin);
   if (!Number.isFinite(durationMin) || durationMin <= 0) {
