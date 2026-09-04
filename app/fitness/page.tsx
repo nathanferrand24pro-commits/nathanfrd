@@ -43,6 +43,25 @@ export default async function FitnessDashboard() {
     include: { sets: true },
   });
 
+  // Nutrition du jour + dernière nuit de sommeil
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const [todayFood, nutritionGoal, lastSleep] = await Promise.all([
+    prisma.foodEntry.aggregate({
+      where: { date: { gte: dayStart, lt: dayEnd } },
+      _sum: { calories: true, proteinG: true },
+    }),
+    prisma.nutritionGoal.findUnique({ where: { id: "default" } }),
+    prisma.sleepEntry.findFirst({ orderBy: { date: "desc" } }),
+  ]);
+  const kcalToday = Math.round(todayFood._sum.calories ?? 0);
+  const proteinToday = Math.round(todayFood._sum.proteinG ?? 0);
+  const kcalGoal = nutritionGoal?.calories ?? 2500;
+  const proteinGoal = nutritionGoal?.proteinG ?? 140;
+
   // Volume hebdomadaire : séries par groupe musculaire.
   const setsByGroup = new Map<string, number>();
   for (const w of weekWorkouts) {
@@ -114,6 +133,83 @@ export default async function FitnessDashboard() {
             {phaseInfo.description}
           </p>
         </div>
+      </div>
+
+      {/* Nutrition + sommeil */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <Link href="/fitness/nutrition" className="rounded-2xl p-6 block" style={card}>
+          <div className="flex items-baseline justify-between">
+            <p
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: "#bf4800" }}
+            >
+              🍽️ Nutrition du jour
+            </p>
+            <span className="text-sm" style={{ color: "#bf4800" }}>
+              →
+            </span>
+          </div>
+          <p className="text-2xl font-bold mt-2" style={{ color: "#1d1d1f" }}>
+            {kcalToday.toLocaleString("fr-FR")}{" "}
+            <span className="text-sm font-medium" style={{ color: "#6e6e73" }}>
+              / {kcalGoal.toLocaleString("fr-FR")} kcal
+            </span>
+          </p>
+          <div
+            className="mt-3 h-2 rounded-full overflow-hidden"
+            style={{ background: "#e8e8ed" }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.min(100, (kcalToday / kcalGoal) * 100)}%`,
+                background: kcalToday > kcalGoal * 1.05 ? "#d70015" : "#bf4800",
+              }}
+            />
+          </div>
+          <p className="text-xs mt-2" style={{ color: "#6e6e73" }}>
+            Protéines : {proteinToday} / {proteinGoal} g
+          </p>
+        </Link>
+
+        <Link href="/fitness/sommeil" className="rounded-2xl p-6 block" style={card}>
+          <div className="flex items-baseline justify-between">
+            <p
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: "#bf4800" }}
+            >
+              🌙 Sommeil
+            </p>
+            <span className="text-sm" style={{ color: "#bf4800" }}>
+              →
+            </span>
+          </div>
+          {lastSleep ? (
+            <>
+              <p className="text-2xl font-bold mt-2" style={{ color: "#1d1d1f" }}>
+                {Math.floor(lastSleep.durationMin / 60)}h
+                {String(lastSleep.durationMin % 60).padStart(2, "0")}{" "}
+                <span className="text-sm font-medium" style={{ color: "#6e6e73" }}>
+                  / 8h visées
+                </span>
+              </p>
+              <p className="text-xs mt-2" style={{ color: "#6e6e73" }}>
+                Nuit du{" "}
+                {new Date(lastSleep.date).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+                {lastSleep.source === "apple-sante" && " · Apple Santé"}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm mt-2" style={{ color: "#6e6e73" }}>
+              Aucune nuit enregistrée — saisissez votre sommeil ou branchez le Raccourci Apple
+              Santé.
+            </p>
+          )}
+        </Link>
       </div>
 
       {/* Planning hebdomadaire */}

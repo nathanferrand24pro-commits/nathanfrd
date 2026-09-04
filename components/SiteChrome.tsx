@@ -34,10 +34,17 @@ export function SiteHeader() {
           </div>
           <div>
             <span
-              className="font-semibold text-sm"
+              className="font-semibold text-sm whitespace-nowrap"
               style={{ color: "#1d1d1f", letterSpacing: "-0.01em" }}
             >
-              {isFitness ? "Fitness — Protocole Huberman" : "Veille Droit Social"}
+              {isFitness ? (
+                <>
+                  <span className="sm:hidden">Fitness</span>
+                  <span className="hidden sm:inline">Fitness — Protocole Huberman</span>
+                </>
+              ) : (
+                "Veille Droit Social"
+              )}
             </span>
           </div>
         </Link>

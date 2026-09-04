@@ -64,6 +64,39 @@ model WorkoutSet {
   createdAt  DateTime @default(now())
 }
 
+model FoodEntry {
+  id        String   @id @default(cuid())
+  date      DateTime // jour de consommation (minuit)
+  meal      String   // "petit-dejeuner" | "dejeuner" | "diner" | "collation"
+  name      String
+  quantityG Float    // quantité en grammes
+  calories  Float    // kcal pour la quantité
+  proteinG  Float    @default(0)
+  carbsG    Float    @default(0)
+  fatG      Float    @default(0)
+  source    String   @default("manuel") // "openfoodfacts" | "manuel"
+  createdAt DateTime @default(now())
+}
+
+model NutritionGoal {
+  id        String   @id @default("default")
+  calories  Int      @default(2500)
+  proteinG  Int      @default(140)
+  updatedAt DateTime @updatedAt
+}
+
+model SleepEntry {
+  id          String    @id @default(cuid())
+  date        DateTime  @unique // jour du réveil (minuit) — une entrée par nuit
+  bedTime     DateTime?
+  wakeTime    DateTime?
+  durationMin Int
+  quality     Int? // 1–5
+  source      String    @default("manuel") // "manuel" | "apple-sante"
+  notes       String?
+  createdAt   DateTime  @default(now())
+}
+
 model AlertSubscription {
   id        String   @id @default(cuid())
   email     String   @unique

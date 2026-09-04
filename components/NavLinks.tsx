@@ -12,8 +12,15 @@ const links = [
 
 export function NavLinks() {
   const pathname = usePathname();
+  // Sur mobile, la section fitness a sa propre barre d'onglets en bas :
+  // on masque la navigation du haut pour éviter tout débordement.
+  const isFitness = pathname.startsWith("/fitness");
   return (
-    <nav className="flex items-center gap-1">
+    <nav
+      className={`items-center gap-1 overflow-x-auto whitespace-nowrap ${
+        isFitness ? "hidden sm:flex" : "flex"
+      }`}
+    >
       {links.map((link) => {
         const active =
           link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);

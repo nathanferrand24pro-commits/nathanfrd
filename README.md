@@ -8,6 +8,9 @@ L'application inclut un suivi du protocole « Foundational Fitness » d'Andrew H
 - **Journal de séance** : enregistrement des séries (exercice, répétitions, charge), durée et notes.
 - **Exercices** : bibliothèque pré-remplie (jambes, poitrine, dos, épaules, bras, mollets, cou, abdominaux), extensible.
 - **Progression** : records personnels et courbes de charge maximale par exercice.
+- **Nutrition** : suivi calorique journalier par repas avec recherche d'aliments via l'API Open Food Facts (ou saisie manuelle), objectifs calories/protéines modifiables.
+- **Sommeil** : saisie des nuits (coucher/réveil/qualité), graphique des 14 dernières nuits, et synchronisation Apple Santé via un Raccourci iOS qui envoie la durée de sommeil sur `POST /api/fitness/sleep` (guide pas à pas sur la page Sommeil). Pour protéger cet endpoint en déploiement public, définir la variable d'environnement `FITNESS_API_TOKEN`.
+- **App iPhone (PWA)** : l'app est installable sur l'écran d'accueil (Safari → Partager → « Sur l'écran d'accueil »), s'ouvre en plein écran sur `/fitness` avec une barre d'onglets en bas façon app native.
 
 Après un `git pull`, appliquer les migrations : `npx prisma migrate dev`.
 

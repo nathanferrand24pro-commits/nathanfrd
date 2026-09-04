@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FitnessNav } from "../../components/FitnessNav";
+import { FitnessNav, FitnessTabBar } from "../../components/FitnessNav";
 
 export const metadata: Metadata = {
   title: "Fitness — Protocole Huberman",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function FitnessLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 pb-28 sm:pb-10">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
         <div>
           <h1
@@ -25,6 +25,7 @@ export default function FitnessLayout({ children }: { children: React.ReactNode 
         <FitnessNav />
       </div>
       {children}
+      <FitnessTabBar />
     </div>
   );
 }
