@@ -35,7 +35,9 @@ export async function PATCH(
   }
   if ("durationMin" in body) {
     data.durationMin =
-      typeof body.durationMin === "number" && body.durationMin > 0 ? body.durationMin : null;
+      typeof body.durationMin === "number" && body.durationMin > 0
+        ? Math.round(body.durationMin)
+        : null;
   }
   if ("distanceKm" in body) {
     data.distanceKm =

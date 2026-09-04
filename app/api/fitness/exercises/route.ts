@@ -23,11 +23,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Groupe musculaire invalide" }, { status: 400 });
   }
 
-  const existing = await prisma.exercise.findUnique({ where: { name } });
-  if (existing) {
-    return NextResponse.json({ error: "Cet exercice existe déjà" }, { status: 409 });
+  try {
+    const exercise = await prisma.exercise.create({ data: { name, muscleGroup } });
+    return NextResponse.json(exercise, { status: 201 });
+  } catch (e) {
+    // Contrainte @unique sur name : réponse propre même en cas d'appels concurrents.
+    if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+      return NextResponse.json({ error: "Cet exercice existe déjà" }, { status: 409 });
+    }
+    throw e;
   }
-
-  const exercise = await prisma.exercise.create({ data: { name, muscleGroup } });
-  return NextResponse.json(exercise, { status: 201 });
 }

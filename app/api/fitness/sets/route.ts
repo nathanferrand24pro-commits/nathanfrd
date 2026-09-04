@@ -24,8 +24,13 @@ export async function POST(request: NextRequest) {
   if (!workout) return NextResponse.json({ error: "Séance non trouvée" }, { status: 404 });
   if (!exercise) return NextResponse.json({ error: "Exercice non trouvé" }, { status: 404 });
 
-  const setNumber =
-    (await prisma.workoutSet.count({ where: { workoutId, exerciseId } })) + 1;
+  // max + 1 (et non count + 1) : après une suppression, count réutiliserait
+  // un numéro de série déjà attribué.
+  const maxSet = await prisma.workoutSet.aggregate({
+    where: { workoutId, exerciseId },
+    _max: { setNumber: true },
+  });
+  const setNumber = (maxSet._max.setNumber ?? 0) + 1;
 
   const set = await prisma.workoutSet.create({
     data: { workoutId, exerciseId, setNumber, reps, weightKg, isWarmup: body.isWarmup === true },

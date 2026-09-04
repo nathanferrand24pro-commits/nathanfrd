@@ -5,7 +5,12 @@ import { DEFAULT_EXERCISES } from "./fitness";
 export async function ensureDefaultExercises() {
   const count = await prisma.exercise.count();
   if (count > 0) return;
-  await prisma.exercise.createMany({
-    data: DEFAULT_EXERCISES.map((e) => ({ ...e, isDefault: true })),
-  });
+  try {
+    await prisma.exercise.createMany({
+      data: DEFAULT_EXERCISES.map((e) => ({ ...e, isDefault: true })),
+    });
+  } catch {
+    // Deux requêtes concurrentes au premier accès : la seconde insertion viole
+    // l'unicité du nom — les exercices sont déjà là, rien à faire.
+  }
 }
