@@ -38,13 +38,13 @@ Le projet Xcode est fourni, déjà réglé : autorisation appareil photo, icône
 
 1. Récupérez le dépôt sur le Mac (*Code → Download ZIP* sur GitHub, ou `git clone`), branche `claude/happy-franklin-kfoee5`.
 2. Double-cliquez sur `carnet-proteines/ios/CarnetProteines.xcodeproj`.
-3. Ouvrez `Config.swift` et remplacez :
-   - `serverURL` par l'adresse Vercel (sans `/` final) ;
-   - `appToken` par votre `APP_TOKEN`.
+3. Dans `Config.swift`, remplacez `defaultServerURL` par l'adresse Vercel (sans `/` final). Vous pouvez aussi la saisir plus tard dans l'app.
 4. Cliquez sur le projet *CarnetProteines*, puis sur l'onglet **Signing & Capabilities**, et choisissez votre compte Apple dans *Team*. Si Xcode indique que l'identifiant `fr.nathanfrd.CarnetProteines` est indisponible, changez-le, par exemple en ajoutant votre prénom.
 5. Branchez l'iPhone, sélectionnez-le en haut d'Xcode, puis lancez avec ▶︎.
    - Au premier lancement, sur l'iPhone : *Réglages → Général → VPN et gestion de l'appareil*, puis faites confiance à votre compte développeur. Activez aussi le *Mode développeur* si l'iPhone le demande (*Réglages → Confidentialité et sécurité*).
    - Avec un compte Apple gratuit, l'app doit être réinstallée depuis Xcode tous les 7 jours. Avec un compte développeur (99 €/an), elle reste installée et peut passer par TestFlight.
+
+Au premier lancement, dans **Profil → Serveur**, collez votre `APP_TOKEN`. Il est gardé dans le trousseau de l'iPhone et n'apparaît jamais dans ce dépôt, qui est public.
 
 Le simulateur n'a pas d'appareil photo : utilisez « Galerie » ou une description.
 

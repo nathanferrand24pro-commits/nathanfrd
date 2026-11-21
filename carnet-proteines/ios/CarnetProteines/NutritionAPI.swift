@@ -25,7 +25,7 @@ enum AnalyzeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: "Renseignez l'adresse du serveur et le jeton dans Config.swift."
+        case .notConfigured: "Renseignez l'adresse du serveur et le jeton d'accès dans Profil → Serveur."
         case .server(let message): message
         case .offline: "Pas de connexion. Vérifiez le réseau et réessayez."
         case .unreadable: "Réponse du serveur illisible. Réessayez."
@@ -42,7 +42,7 @@ enum NutritionAPI {
     private struct ErrorBody: Decodable { let error: String }
 
     static func analyze(jpeg: Data?, note: String) async throws -> AnalysisResult {
-        guard Config.appToken != "REMPLACEZ-MOI",
+        guard Config.isConfigured,
               let url = URL(string: Config.serverURL + "/api/analyze") else {
             throw AnalyzeError.notConfigured
         }

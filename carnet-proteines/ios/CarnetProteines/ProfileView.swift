@@ -7,6 +7,8 @@ struct ProfileView: View {
     @State private var useCustomKcal = false
     @State private var customKcal = 2500
     @State private var saved = false
+    @State private var serverURL = Config.serverURL
+    @State private var appToken = Config.appToken
 
     var body: some View {
         let t = editedProfile.targets
@@ -70,8 +72,24 @@ struct ProfileView: View {
             }
 
             Section {
+                TextField("Adresse du serveur", text: $serverURL)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                SecureField("Jeton d'accès", text: $appToken)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            } header: {
+                Text("Serveur")
+            } footer: {
+                Text("Le jeton d'accès est gardé dans le trousseau de l'iPhone. Ce n'est pas la clé Claude, qui reste sur le serveur.")
+            }
+
+            Section {
                 Button(isOnboarding ? "Commencer" : (saved ? "Profil enregistré" : "Enregistrer")) {
                     store.profile = editedProfile
+                    Config.serverURL = serverURL
+                    Config.appToken = appToken
                     saved = true
                 }
                 .frame(maxWidth: .infinity)
