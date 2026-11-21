@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Application Carnet Protéines : projet séparé (serveur Vercel + app iPhone).
+    "carnet-proteines/**",
   ]),
 ]);
 
