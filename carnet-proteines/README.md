@@ -34,19 +34,16 @@ La réponse attendue est un JSON avec `"plat"`, `"aliments"`, `"confiance"` et `
 
 ## 2. Installer l'app sur l'iPhone (Xcode, sur Mac)
 
-1. Ouvrez Xcode, puis *File → New → Project → iOS → App*.
-   - Product Name : `CarnetProteines`
-   - Interface : **SwiftUI** · Storage : **None**
-2. Dans le navigateur de fichiers d'Xcode, supprimez `ContentView.swift` et `CarnetProteinesApp.swift`, ceux créés par Xcode.
-3. Glissez-y tous les fichiers `.swift` de `ios/CarnetProteines/` et cochez *Copy items if needed*.
-4. Ouvrez `Config.swift` et remplacez :
+Le projet Xcode est fourni, déjà réglé : autorisation appareil photo, icône, nom « Carnet Protéines », iOS 17, iPhone uniquement. Il faut **Xcode 16 ou plus récent**.
+
+1. Récupérez le dépôt sur le Mac (*Code → Download ZIP* sur GitHub, ou `git clone`), branche `claude/happy-franklin-kfoee5`.
+2. Double-cliquez sur `carnet-proteines/ios/CarnetProteines.xcodeproj`.
+3. Ouvrez `Config.swift` et remplacez :
    - `serverURL` par l'adresse Vercel (sans `/` final) ;
    - `appToken` par votre `APP_TOKEN`.
-5. Dans la cible *CarnetProteines*, onglet **Info**, ajoutez la clé
-   `Privacy - Camera Usage Description` avec la valeur « Pour photographier vos repas et estimer leurs calories et leurs macros. »
-6. Dans l'onglet **Signing & Capabilities**, choisissez votre compte Apple dans *Team*.
-7. Branchez l'iPhone, sélectionnez-le en haut d'Xcode, puis lancez avec ▶︎.
-   - Au premier lancement, sur l'iPhone : *Réglages → Général → VPN et gestion de l'appareil*, puis faites confiance à votre compte développeur.
+4. Cliquez sur le projet *CarnetProteines*, puis sur l'onglet **Signing & Capabilities**, et choisissez votre compte Apple dans *Team*. Si Xcode indique que l'identifiant `fr.nathanfrd.CarnetProteines` est indisponible, changez-le, par exemple en ajoutant votre prénom.
+5. Branchez l'iPhone, sélectionnez-le en haut d'Xcode, puis lancez avec ▶︎.
+   - Au premier lancement, sur l'iPhone : *Réglages → Général → VPN et gestion de l'appareil*, puis faites confiance à votre compte développeur. Activez aussi le *Mode développeur* si l'iPhone le demande (*Réglages → Confidentialité et sécurité*).
    - Avec un compte Apple gratuit, l'app doit être réinstallée depuis Xcode tous les 7 jours. Avec un compte développeur (99 €/an), elle reste installée et peut passer par TestFlight.
 
 Le simulateur n'a pas d'appareil photo : utilisez « Galerie » ou une description.
